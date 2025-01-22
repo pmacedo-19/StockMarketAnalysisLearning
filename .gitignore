@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.spec
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+.venv.bak/
+
+# Flask
+instance/
+*.log
+*.sqlite
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+.env
+docker-compose.override.yml
+
+# MySQL
+*.sql
+*.sql.gz
+
+# Pytest
+.pytest_cache/
+.cache/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.orig
+
+# System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# GitHub Actions
+*.retry
