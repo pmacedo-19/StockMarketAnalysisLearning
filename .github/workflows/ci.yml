@@ -14,10 +14,16 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.12.4
+          python-version: 3.12
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade pip3
-          pip3 install -r requirements.txt
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Set up environment variables
+        run: |
+          echo "DB_USERNAME=test_user" >> $GITHUB_ENV
+          echo "DB_PASSWORD=test_password" >> $GITHUB_ENV
+          echo "DB_HOST=localhost" >> $GITHUB_ENV
+          echo "DB_NAME=test_db" >> $GITHUB_ENV
       - name: Run Tests
         run: pytest
