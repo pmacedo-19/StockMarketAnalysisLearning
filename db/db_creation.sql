@@ -1,6 +1,6 @@
-CREATE DATABASE stock_market;
+CREATE DATABASE stockdb;
 
-USE stock_market;
+USE stockdb;
 
 -- Users table
 CREATE TABLE users (
