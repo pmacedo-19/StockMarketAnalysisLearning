@@ -1,12 +1,12 @@
+import requests, os, time
+import yfinance as yf
 from app import db, cache  # Import cache from __init__.py
-import requests
 from app.models import Stock, StockPrice
 from datetime import datetime, timedelta, date
-import os
 from sqlalchemy import desc, asc
 from app.models import db, APIRequestLog
 from flask import request
-import time
+
 
 # Finnhub API details
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
@@ -212,3 +212,88 @@ def log_api_request(endpoint, status_code, start_time, user_id=None):
 
     db.session.add(log_entry)
     db.session.commit()
+
+
+def fetch_historical_data_from_finnhub(symbol, resolution="D", start_date=None, end_date=None):
+    """
+    Fetch historical stock data from Finnhub's candle endpoint.
+    
+    Query parameters:
+      - symbol: Stock symbol (e.g., "AAPL")
+      - resolution: Candle resolution ("D" for daily, "W" for weekly, etc.)
+      - start_date: Start date in "YYYY-MM-DD" format (optional)
+      - end_date: End date in "YYYY-MM-DD" format (optional)
+      
+    Defaults:
+      - If end_date is not provided, it uses today.
+      - If start_date is not provided, it uses 30 days before the end_date.
+    """
+    # Convert date strings to datetime objects
+    if end_date:
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+    else:
+        end_dt = datetime.today()
+    if start_date:
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+    else:
+        start_dt = end_dt - timedelta(days=30)
+
+    # Convert to UNIX timestamps
+    from_timestamp = int(start_dt.timestamp())
+    to_timestamp = int(end_dt.timestamp())
+
+    url = (
+        f"https://finnhub.io/api/v1/stock/candle?"
+        f"symbol={symbol}&resolution={resolution}&from={from_timestamp}&to={to_timestamp}&token={FINNHUB_API_KEY}"
+    )
+    response = requests.get(url)
+    data = response.json()
+
+    # Check if the response is successful (s should be "ok")
+    if data.get("s") != "ok":
+        return {"error": "Error fetching historical data", "data": data}
+
+    historical_data = []
+    # Finnhub returns lists for timestamps ("t"), open ("o"), high ("h"), low ("l"), close ("c"), and volume ("v")
+    for i in range(len(data["t"])):
+        candle = {
+            "date": datetime.fromtimestamp(data["t"][i]).strftime("%Y-%m-%d"),
+            "open_price": data["o"][i],
+            "high_price": data["h"][i],
+            "low_price": data["l"][i],
+            "close_price": data["c"][i],
+            "volume": data["v"][i]
+        }
+        historical_data.append(candle)
+
+    return historical_data
+
+def fetch_historical_data_yfinance(symbol, period="1mo", interval="1d"):
+    """
+    Fetch historical stock data for a given symbol using yfinance.
+    
+    Parameters:
+      - symbol: Stock symbol, e.g., "AAPL"
+      - period: Data period to download (e.g., "1mo", "1y")
+      - interval: Data interval (e.g., "1d" for daily, "1wk" for weekly)
+      
+    Returns:
+      - A list of dictionaries with historical data.
+    """
+    ticker = yf.Ticker(symbol)
+    hist = ticker.history(period=period, interval=interval)
+    
+    # Convert the DataFrame to a list of dictionaries
+    historical_data = hist.reset_index().to_dict(orient="records")
+    
+    formatted_data = []
+    for record in historical_data:
+        formatted_data.append({
+            "date": record.get("Date").strftime("%Y-%m-%d") if record.get("Date") else None,
+            "open_price": record.get("Open"),
+            "high_price": record.get("High"),
+            "low_price": record.get("Low"),
+            "close_price": record.get("Close"),
+            "volume": record.get("Volume")
+        })
+    return formatted_data
